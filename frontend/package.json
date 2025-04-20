@@ -1,0 +1,29 @@
+{
+  "name": "m3u-downloader-frontend",
+  "version": "1.0.0",
+  "description": "Frontend for M3U Downloader application",
+  "type": "module",
+  "engines": {
+    "node": ">=16.3.0"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "axios": "^1.6.2",
+    "lucide-react": "^0.292.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-router-dom": "^6.19.0"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.2.0",
+    "autoprefixer": "^10.4.21",
+    "postcss": "^8.5.3",
+    "postcss-nesting": "^13.0.1",
+    "tailwindcss": "^3.4.17",
+    "vite": "^6.3.2"
+  }
+}
