@@ -53,25 +53,15 @@ const SettingsForm = ({ settings, onUpdate }) => {
           <label htmlFor="downloadPath" className="form-label">
             Download Path
           </label>
-          <div className="flex">
-            <input
-              type="text"
-              id="downloadPath"
-              className="form-input rounded-r-none"
-              value={downloadPath}
-              onChange={(e) => setDownloadPath(e.target.value)}
-              disabled={isSubmitting}
-              required
-            />
-            <button
-              type="button"
-              className="btn btn-secondary rounded-l-none"
-              title="This would open a folder picker in a real app"
-              disabled={isSubmitting}
-            >
-              <FolderOpen size={18} />
-            </button>
-          </div>
+          <input
+            type="text"
+            id="downloadPath"
+            className="form-input"
+            value={downloadPath}
+            onChange={(e) => setDownloadPath(e.target.value)}
+            disabled={isSubmitting}
+            required
+          />
           <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
             Where downloaded files will be saved
           </p>
