@@ -24,7 +24,7 @@ function App() {
         // Set default settings when backend is not available
         setSettings({
           download_path: './downloads',
-          webui_port: 3001,
+          webui_port: 3000,
           watchlist_refresh_rate: 60
         });
       } finally {

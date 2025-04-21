@@ -6,7 +6,7 @@
   "scripts": {
     "install:all": "npm install && cd backend && npm install && cd ../frontend && npm install",
     "backend": "cd backend && npm run dev",
-    "frontend": "cd frontend && npm run dev",
+    "frontend": "node scripts/start-frontend.js",
     "dev": "concurrently \"npm run backend\" \"npm run frontend\"",
     "build": "cd frontend && npm run build",
     "start": "cd backend && npm start"
@@ -17,9 +17,13 @@
     "streaming",
     "playlist"
   ],
-  "author": "",
+  "author": "Massimo Faulkner",
   "license": "MIT",
   "devDependencies": {
     "concurrently": "^8.0.1"
+  },
+  "dependencies": {
+    "sqlite": "^5.0.1",
+    "sqlite3": "^5.1.6"
   }
 }
