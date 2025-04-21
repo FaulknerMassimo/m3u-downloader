@@ -69,7 +69,7 @@ const SettingsForm = ({ settings, onUpdate }) => {
         
         <div className="form-group">
           <label htmlFor="webuiPort" className="form-label">
-            WebUI Port
+            Frontend Port
           </label>
           <input
             type="number"
@@ -83,7 +83,7 @@ const SettingsForm = ({ settings, onUpdate }) => {
             required
           />
           <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
-            Port for the web interface (requires restart)
+            Port for the frontend web interface (requires restart)
           </p>
         </div>
         

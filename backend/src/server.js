@@ -16,7 +16,8 @@ if (!fs.existsSync(DEFAULT_DOWNLOAD_PATH)) {
 
 // Initialize Express app
 const app = express();
-const PORT = process.env.PORT || 3001;
+// Always use port 3001 for the backend API
+const PORT = 3001;
 
 // Middleware
 app.use(cors());

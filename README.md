@@ -60,17 +60,17 @@ The project is divided into two main parts:
 
 1. Start the backend server:
    ```
-   cd backend
-   npm run dev
+   npm run backend
    ```
 
 2. Start the frontend development server:
    ```
-   cd frontend
-   npm run dev
+   npm run frontend
    ```
 
 3. Open your browser and navigate to `http://localhost:3000`
+
+- The frontend server will automatically select an available port if the default port 3000 is in use or conflicts with the backend port 3001.
 
 ## Usage
 

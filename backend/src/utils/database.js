@@ -8,7 +8,7 @@ let db;
 
 const DEFAULT_SETTINGS = {
   download_path: path.join(__dirname, '../../downloads'),
-  webui_port: 3001,
+  webui_port: 3000,
   watchlist_refresh_rate: 60,
 };
 
