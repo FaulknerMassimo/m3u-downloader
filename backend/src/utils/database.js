@@ -30,7 +30,8 @@ const initDatabase = async () => {
       CREATE TABLE IF NOT EXISTS categories (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         name TEXT NOT NULL UNIQUE,
-        download_path TEXT
+        download_path TEXT,
+        use_series_folders INTEGER DEFAULT 0
       );
       
       CREATE TABLE IF NOT EXISTS m3u_links (
@@ -86,16 +87,17 @@ const initDatabase = async () => {
       const tvShowsPath = path.join(basePath, 'TV Shows');
       const moviesPath = path.join(basePath, 'Movies');
       
-      await db.run("INSERT INTO categories (name, download_path) VALUES ('TV Shows', ?)", [tvShowsPath]);
-      await db.run("INSERT INTO categories (name, download_path) VALUES ('Movies', ?)", [moviesPath]);
+      // TV Shows by default will have use_series_folders set to true (1)
+      await db.run("INSERT INTO categories (name, download_path, use_series_folders) VALUES ('TV Shows', ?, 1)", [tvShowsPath]);
+      await db.run("INSERT INTO categories (name, download_path, use_series_folders) VALUES ('Movies', ?, 0)", [moviesPath]);
       logger.info('Inserted default categories with download paths.');
     } else {
-      // Check if we need to add download_path to existing categories
+      // Check if we need to add columns to existing categories table
       try {
-        await db.get('SELECT download_path FROM categories LIMIT 1');
+        await db.get('SELECT download_path, use_series_folders FROM categories LIMIT 1');
       } catch (error) {
-        if (error.message.includes('no such column')) {
-          // Column doesn't exist, add it
+        if (error.message.includes('no such column: download_path')) {
+          // download_path column doesn't exist, add it
           logger.info('Adding download_path column to existing categories table');
           await db.exec('ALTER TABLE categories ADD COLUMN download_path TEXT');
           
@@ -111,6 +113,16 @@ const initDatabase = async () => {
           }
           
           logger.info('Updated existing categories with default download paths');
+        }
+        
+        if (error.message.includes('no such column: use_series_folders')) {
+          // use_series_folders column doesn't exist, add it
+          logger.info('Adding use_series_folders column to existing categories table');
+          await db.exec('ALTER TABLE categories ADD COLUMN use_series_folders INTEGER DEFAULT 0');
+          
+          // By default, enable series folders for TV Shows category
+          await db.run("UPDATE categories SET use_series_folders = 1 WHERE name = 'TV Shows'");
+          logger.info('Updated TV Shows category to use series folders by default');
         }
       }
     }

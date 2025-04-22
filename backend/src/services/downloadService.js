@@ -12,6 +12,8 @@ exports.startDownload = async ({ url, title, m3u_link_id, downloadPath }) => {
   const db = getDb();
   
   let finalDownloadPath = downloadPath;
+  let categoryId = null;
+  let useSeriesFolders = false;
   
   // If m3u_link_id is provided, get category-specific download path
   if (m3u_link_id) {
@@ -20,12 +22,26 @@ exports.startDownload = async ({ url, title, m3u_link_id, downloadPath }) => {
       const m3uLink = await db.get('SELECT category_id FROM m3u_links WHERE id = ?', [m3u_link_id]);
       
       if (m3uLink && m3uLink.category_id) {
-        // Get the category-specific download path
-        const category = await db.get('SELECT download_path FROM categories WHERE id = ?', [m3uLink.category_id]);
+        categoryId = m3uLink.category_id;
+        
+        // Get the category-specific download path and series folder setting
+        const category = await db.get('SELECT download_path, use_series_folders, name FROM categories WHERE id = ?', [categoryId]);
         
         if (category && category.download_path) {
           finalDownloadPath = category.download_path;
+          useSeriesFolders = category.use_series_folders === 1;
           logger.info(`Using category-specific download path: ${finalDownloadPath}`);
+          
+          // Check if we should use series folders for TV Shows
+          if (useSeriesFolders && category.name === 'TV Shows') {
+            const seriesName = extractSeriesName(title);
+            if (seriesName) {
+              // Create a safe folder name for the series
+              const safeFolderName = seriesName.replace(/[^a-z0-9]/gi, ' ').trim().replace(/\s+/g, '_');
+              finalDownloadPath = path.join(finalDownloadPath, safeFolderName);
+              logger.info(`Using series folder for download: ${finalDownloadPath}`);
+            }
+          }
         }
       }
     } catch (error) {
@@ -54,6 +70,23 @@ exports.startDownload = async ({ url, title, m3u_link_id, downloadPath }) => {
   
   return downloadId;
 };
+
+// Helper function to extract series name from title
+function extractSeriesName(title) {
+  // Pattern: Series name - SxxExx - Episode title
+  const seriesTitleMatch = title.match(/^(.+?)[-–—]\s*S\d+/i);
+  if (seriesTitleMatch) {
+    return seriesTitleMatch[1].trim();
+  }
+  
+  // Alternative pattern: Series name - Episode title
+  const simpleSeriesTitleMatch = title.match(/^(.+?)[-–—]/);
+  if (simpleSeriesTitleMatch) {
+    return simpleSeriesTitleMatch[1].trim();
+  }
+  
+  return null;
+}
 
 exports.cancelDownload = async (downloadId) => {
   const download = activeDownloads.get(parseInt(downloadId, 10));

@@ -6,9 +6,11 @@ import { createCategory, updateCategory, deleteCategory } from '../../services/a
 const CategoryForm = ({ categories, onCategoryChange }) => {
   const [newCategory, setNewCategory] = useState('');
   const [newCategoryPath, setNewCategoryPath] = useState('');
+  const [newUseSeriesFolders, setNewUseSeriesFolders] = useState(false);
   const [editingCategory, setEditingCategory] = useState(null);
   const [editName, setEditName] = useState('');
   const [editPath, setEditPath] = useState('');
+  const [editUseSeriesFolders, setEditUseSeriesFolders] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState(null);
 
@@ -23,7 +25,8 @@ const CategoryForm = ({ categories, onCategoryChange }) => {
       
       const category = await createCategory({ 
         name: newCategory.trim(),
-        download_path: newCategoryPath.trim()
+        download_path: newCategoryPath.trim(),
+        use_series_folders: newUseSeriesFolders
       });
       
       if (onCategoryChange) {
@@ -32,6 +35,7 @@ const CategoryForm = ({ categories, onCategoryChange }) => {
       
       setNewCategory('');
       setNewCategoryPath('');
+      setNewUseSeriesFolders(false);
     } catch (error) {
       console.error('Failed to add category:', error);
       setError('Failed to add category. It might already exist.');
@@ -51,7 +55,8 @@ const CategoryForm = ({ categories, onCategoryChange }) => {
       
       const updatedCategory = await updateCategory(editingCategory.id, { 
         name: editName.trim(),
-        download_path: editPath.trim()
+        download_path: editPath.trim(),
+        use_series_folders: editUseSeriesFolders
       });
       
       if (onCategoryChange) {
@@ -63,6 +68,7 @@ const CategoryForm = ({ categories, onCategoryChange }) => {
       setEditingCategory(null);
       setEditName('');
       setEditPath('');
+      setEditUseSeriesFolders(false);
     } catch (error) {
       console.error('Failed to update category:', error);
       setError('Failed to update category. The name might already be in use.');
@@ -97,12 +103,14 @@ const CategoryForm = ({ categories, onCategoryChange }) => {
     setEditingCategory(category);
     setEditName(category.name);
     setEditPath(category.download_path || '');
+    setEditUseSeriesFolders(category.use_series_folders || false);
   };
 
   const cancelEditing = () => {
     setEditingCategory(null);
     setEditName('');
     setEditPath('');
+    setEditUseSeriesFolders(false);
   };
 
   return (
@@ -155,6 +163,25 @@ const CategoryForm = ({ categories, onCategoryChange }) => {
             If left empty, a subfolder will be created in the default download path
           </p>
         </div>
+        {newCategory.toLowerCase() === 'tv shows' && (
+          <div className="form-group">
+            <label className="flex items-center space-x-2 cursor-pointer">
+              <input
+                type="checkbox"
+                className="form-checkbox"
+                checked={newUseSeriesFolders}
+                onChange={(e) => setNewUseSeriesFolders(e.target.checked)}
+                disabled={isSubmitting}
+              />
+              <span className="text-gray-700 dark:text-gray-300">
+                Save files in series folders
+              </span>
+            </label>
+            <p className="mt-1 text-xs text-gray-600 dark:text-gray-400 ml-6">
+              When enabled, downloads will be organized into subfolders by series name
+            </p>
+          </div>
+        )}
         <div>
           <button
             type="submit"
@@ -201,6 +228,25 @@ const CategoryForm = ({ categories, onCategoryChange }) => {
                     </button>
                   </div>
                 </div>
+                {editName.toLowerCase() === 'tv shows' && (
+                  <div className="form-group">
+                    <label className="flex items-center space-x-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        className="form-checkbox"
+                        checked={editUseSeriesFolders}
+                        onChange={(e) => setEditUseSeriesFolders(e.target.checked)}
+                        disabled={isSubmitting}
+                      />
+                      <span className="text-gray-700 dark:text-gray-300">
+                        Save files in series folders
+                      </span>
+                    </label>
+                    <p className="mt-1 text-xs text-gray-600 dark:text-gray-400 ml-6">
+                      When enabled, downloads will be organized into subfolders by series name
+                    </p>
+                  </div>
+                )}
                 <div className="flex space-x-2">
                   <button
                     type="submit"
@@ -229,6 +275,19 @@ const CategoryForm = ({ categories, onCategoryChange }) => {
                         <FolderOpen size={14} className="mr-1" />
                         {category.download_path}
                       </span>
+                    </div>
+                  )}
+                  {category.name.toLowerCase() === 'tv shows' && (
+                    <div className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                      {category.use_series_folders ? (
+                        <span className="flex items-center text-green-600 dark:text-green-400">
+                          Series folders enabled
+                        </span>
+                      ) : (
+                        <span className="flex items-center">
+                          Series folders disabled
+                        </span>
+                      )}
                     </div>
                   )}
                 </div>

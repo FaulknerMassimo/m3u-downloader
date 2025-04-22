@@ -16,7 +16,7 @@ exports.getAllCategories = async (req, res) => {
 
 exports.createCategory = async (req, res) => {
   try {
-    const { name, download_path } = req.body;
+    const { name, download_path, use_series_folders } = req.body;
     if (!name) {
       return res.status(400).json({ error: 'Category name is required' });
     }
@@ -31,15 +31,19 @@ exports.createCategory = async (req, res) => {
       categoryDownloadPath = path.join(basePath, name);
     }
     
+    // Set use_series_folders to default value of 0 if not provided
+    const useSeriesFolders = use_series_folders ? 1 : 0;
+    
     const result = await db.run(
-      'INSERT INTO categories (name, download_path) VALUES (?, ?)', 
-      [name, categoryDownloadPath]
+      'INSERT INTO categories (name, download_path, use_series_folders) VALUES (?, ?, ?)', 
+      [name, categoryDownloadPath, useSeriesFolders]
     );
     
     res.status(201).json({
       id: result.lastID,
       name,
-      download_path: categoryDownloadPath
+      download_path: categoryDownloadPath,
+      use_series_folders: useSeriesFolders === 1
     });
   } catch (error) {
     logger.error('Error creating category:', error);
@@ -55,7 +59,7 @@ exports.createCategory = async (req, res) => {
 exports.updateCategory = async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, download_path } = req.body;
+    const { name, download_path, use_series_folders } = req.body;
     
     if (!name) {
       return res.status(400).json({ error: 'Category name is required' });
@@ -63,23 +67,38 @@ exports.updateCategory = async (req, res) => {
     
     const db = getDb();
     
-    // If download_path is provided, update it, otherwise keep existing value
-    if (download_path) {
-      await db.run(
-        'UPDATE categories SET name = ?, download_path = ? WHERE id = ?', 
-        [name, download_path, id]
-      );
-    } else {
-      await db.run('UPDATE categories SET name = ? WHERE id = ?', [name, id]);
-    }
+    // Get the existing category to determine what needs to be updated
+    const existingCategory = await db.get('SELECT * FROM categories WHERE id = ?', [id]);
     
-    const updatedCategory = await db.get('SELECT * FROM categories WHERE id = ?', [id]);
-    
-    if (!updatedCategory) {
+    if (!existingCategory) {
       return res.status(404).json({ error: 'Category not found' });
     }
     
-    res.json(updatedCategory);
+    // Prepare update query and parameters based on what was provided
+    let updateQuery = 'UPDATE categories SET name = ?';
+    let params = [name];
+    
+    if (download_path !== undefined) {
+      updateQuery += ', download_path = ?';
+      params.push(download_path);
+    }
+    
+    if (use_series_folders !== undefined) {
+      updateQuery += ', use_series_folders = ?';
+      params.push(use_series_folders ? 1 : 0);
+    }
+    
+    updateQuery += ' WHERE id = ?';
+    params.push(id);
+    
+    await db.run(updateQuery, params);
+    
+    const updatedCategory = await db.get('SELECT * FROM categories WHERE id = ?', [id]);
+    
+    res.json({
+      ...updatedCategory,
+      use_series_folders: updatedCategory.use_series_folders === 1
+    });
   } catch (error) {
     logger.error('Error updating category:', error);
     

@@ -6,6 +6,7 @@ class Category {
     this.id = data.id;
     this.name = data.name;
     this.download_path = data.download_path;
+    this.use_series_folders = data.use_series_folders === 1; // Convert SQLite integer to boolean
   }
 
   static async findAll() {
@@ -31,11 +32,17 @@ class Category {
     
     if (this.id) {
       // Update existing category
-      await db.run('UPDATE categories SET name = ?, download_path = ? WHERE id = ?', [this.name, this.download_path, this.id]);
+      await db.run(
+        'UPDATE categories SET name = ?, download_path = ?, use_series_folders = ? WHERE id = ?', 
+        [this.name, this.download_path, this.use_series_folders ? 1 : 0, this.id]
+      );
       return this;
     } else {
       // Create new category
-      const result = await db.run('INSERT INTO categories (name, download_path) VALUES (?, ?)', [this.name, this.download_path]);
+      const result = await db.run(
+        'INSERT INTO categories (name, download_path, use_series_folders) VALUES (?, ?, ?)', 
+        [this.name, this.download_path, this.use_series_folders ? 1 : 0]
+      );
       this.id = result.lastID;
       return this;
     }
@@ -55,7 +62,8 @@ class Category {
     return {
       id: this.id,
       name: this.name,
-      download_path: this.download_path
+      download_path: this.download_path,
+      use_series_folders: this.use_series_folders
     };
   }
 }
