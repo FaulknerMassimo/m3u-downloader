@@ -11,11 +11,34 @@ const activeDownloads = new Map();
 exports.startDownload = async ({ url, title, m3u_link_id, downloadPath }) => {
   const db = getDb();
   
+  let finalDownloadPath = downloadPath;
+  
+  // If m3u_link_id is provided, get category-specific download path
+  if (m3u_link_id) {
+    try {
+      // Get the category ID for this m3u link
+      const m3uLink = await db.get('SELECT category_id FROM m3u_links WHERE id = ?', [m3u_link_id]);
+      
+      if (m3uLink && m3uLink.category_id) {
+        // Get the category-specific download path
+        const category = await db.get('SELECT download_path FROM categories WHERE id = ?', [m3uLink.category_id]);
+        
+        if (category && category.download_path) {
+          finalDownloadPath = category.download_path;
+          logger.info(`Using category-specific download path: ${finalDownloadPath}`);
+        }
+      }
+    } catch (error) {
+      logger.error('Error getting category download path:', error);
+      // Continue with default download path
+    }
+  }
+  
   // Create a safe filename
   const safeTitle = title.replace(/[^a-z0-9.]/gi, '_');
   const fileExt = path.extname(url) || determineExtension(url) || '.mp4';
   const fileName = `${safeTitle}${fileExt}`;
-  const filePath = path.join(downloadPath, fileName);
+  const filePath = path.join(finalDownloadPath, fileName);
   
   // Create download record
   const result = await db.run(`
@@ -71,7 +94,9 @@ exports.getDownloadStatus = (downloadId) => {
   return download ? { 
     progress: download.progress,
     speed: download.speed,
-    eta: download.eta
+    eta: download.eta,
+    bytesDownloaded: download.bytesDownloaded,
+    totalBytes: download.totalBytes
   } : null;
 };
 
@@ -87,7 +112,8 @@ const startDownloadProcess = async (downloadId, url, filePath) => {
     filePath,
     cancelTokenSource: source,
     startTime: Date.now(),
-    bytesDownloaded: 0
+    bytesDownloaded: 0,
+    totalBytes: 0
   });
   
   try {
@@ -103,13 +129,20 @@ const startDownloadProcess = async (downloadId, url, filePath) => {
       url,
       responseType: 'stream',
       cancelToken: source.token,
-      timeout: 60000, // 60 seconds timeout
+      timeout: 60000,
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
       }
     });
     
     const totalBytes = parseInt(response.headers['content-length'], 10) || 0;
+    
+    // Update total bytes in the active downloads map
+    const download = activeDownloads.get(parseInt(downloadId, 10));
+    if (download) {
+      download.totalBytes = totalBytes;
+    }
+    
     const writer = fs.createWriteStream(filePath);
     let downloadedBytes = 0;
     const intervals = [];

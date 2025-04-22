@@ -1,8 +1,8 @@
 // frontend/src/pages/Downloads.jsx
 import React, { useState, useEffect } from 'react';
 import Header from '../components/common/Header';
-import DownloadsList from '../components/downloads/DownloadsList';
-import DownloadHistory from '../components/downloads/DownloadHistory';
+import DownloadsList from '../components/download-management/DownloadsList';
+import DownloadHistory from '../components/download-management/DownloadHistory';
 import { fetchActiveDownloads, fetchDownloadHistory } from '../services/api';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 

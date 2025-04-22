@@ -1,12 +1,14 @@
 // frontend/src/components/settings/CategoryForm.jsx
 import React, { useState } from 'react';
-import { Plus, Edit, Trash2 } from 'lucide-react';
+import { Plus, Edit, Trash2, FolderOpen } from 'lucide-react';
 import { createCategory, updateCategory, deleteCategory } from '../../services/api';
 
 const CategoryForm = ({ categories, onCategoryChange }) => {
   const [newCategory, setNewCategory] = useState('');
+  const [newCategoryPath, setNewCategoryPath] = useState('');
   const [editingCategory, setEditingCategory] = useState(null);
   const [editName, setEditName] = useState('');
+  const [editPath, setEditPath] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState(null);
 
@@ -19,13 +21,17 @@ const CategoryForm = ({ categories, onCategoryChange }) => {
       setIsSubmitting(true);
       setError(null);
       
-      const category = await createCategory({ name: newCategory.trim() });
+      const category = await createCategory({ 
+        name: newCategory.trim(),
+        download_path: newCategoryPath.trim()
+      });
       
       if (onCategoryChange) {
         onCategoryChange([...categories, category]);
       }
       
       setNewCategory('');
+      setNewCategoryPath('');
     } catch (error) {
       console.error('Failed to add category:', error);
       setError('Failed to add category. It might already exist.');
@@ -43,7 +49,10 @@ const CategoryForm = ({ categories, onCategoryChange }) => {
       setIsSubmitting(true);
       setError(null);
       
-      const updatedCategory = await updateCategory(editingCategory.id, { name: editName.trim() });
+      const updatedCategory = await updateCategory(editingCategory.id, { 
+        name: editName.trim(),
+        download_path: editPath.trim()
+      });
       
       if (onCategoryChange) {
         onCategoryChange(
@@ -53,6 +62,7 @@ const CategoryForm = ({ categories, onCategoryChange }) => {
       
       setEditingCategory(null);
       setEditName('');
+      setEditPath('');
     } catch (error) {
       console.error('Failed to update category:', error);
       setError('Failed to update category. The name might already be in use.');
@@ -86,11 +96,13 @@ const CategoryForm = ({ categories, onCategoryChange }) => {
   const startEditing = (category) => {
     setEditingCategory(category);
     setEditName(category.name);
+    setEditPath(category.download_path || '');
   };
 
   const cancelEditing = () => {
     setEditingCategory(null);
     setEditName('');
+    setEditPath('');
   };
 
   return (
@@ -105,59 +117,121 @@ const CategoryForm = ({ categories, onCategoryChange }) => {
         </div>
       )}
       
-      <form onSubmit={handleAddCategory} className="mb-4">
-        <div className="flex">
+      <form onSubmit={handleAddCategory} className="mb-4 space-y-3">
+        <div className="form-group">
+          <label htmlFor="newCategory" className="form-label">Name</label>
           <input
             type="text"
-            className="form-input rounded-r-none"
+            id="newCategory"
+            className="form-input"
             placeholder="Add new category"
             value={newCategory}
             onChange={(e) => setNewCategory(e.target.value)}
             disabled={isSubmitting}
             required
           />
+        </div>
+        <div className="form-group">
+          <label htmlFor="newCategoryPath" className="form-label">Download Path (optional)</label>
+          <div className="flex">
+            <input
+              type="text"
+              id="newCategoryPath"
+              className="form-input rounded-r-none flex-grow"
+              placeholder="Leave empty to use default path"
+              value={newCategoryPath}
+              onChange={(e) => setNewCategoryPath(e.target.value)}
+              disabled={isSubmitting}
+            />
+            <button
+              type="button"
+              className="px-3 bg-gray-200 hover:bg-gray-300 border border-gray-300 rounded-r-md flex items-center justify-center"
+              title="Browse folders"
+            >
+              <FolderOpen size={18} className="text-gray-700" />
+            </button>
+          </div>
+          <p className="mt-1 text-xs text-gray-600 dark:text-gray-400">
+            If left empty, a subfolder will be created in the default download path
+          </p>
+        </div>
+        <div>
           <button
             type="submit"
-            className="btn btn-primary rounded-l-none"
+            className="btn btn-primary"
             disabled={isSubmitting}
           >
-            <Plus size={18} />
+            <Plus size={18} className="mr-1" /> Add Category
           </button>
         </div>
       </form>
       
       <div className="space-y-2">
         {categories.map((category) => (
-          <div key={category.id} className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-700 rounded">
+          <div key={category.id} className="flex items-start justify-between p-2 bg-gray-50 dark:bg-gray-700 rounded">
             {editingCategory && editingCategory.id === category.id ? (
-              <form onSubmit={handleEditCategory} className="flex-1 flex">
-                <input
-                  type="text"
-                  className="form-input rounded-r-none"
-                  value={editName}
-                  onChange={(e) => setEditName(e.target.value)}
-                  disabled={isSubmitting}
-                  required
-                />
-                <button
-                  type="submit"
-                  className="btn btn-primary rounded-l-none rounded-r-none"
-                  disabled={isSubmitting}
-                >
-                  Save
-                </button>
-                <button
-                  type="button"
-                  className="btn btn-secondary rounded-l-none"
-                  onClick={cancelEditing}
-                  disabled={isSubmitting}
-                >
-                  Cancel
-                </button>
+              <form onSubmit={handleEditCategory} className="flex-1 space-y-2">
+                <div className="form-group">
+                  <label className="form-label">Name</label>
+                  <input
+                    type="text"
+                    className="form-input"
+                    value={editName}
+                    onChange={(e) => setEditName(e.target.value)}
+                    disabled={isSubmitting}
+                    required
+                  />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Download Path</label>
+                  <div className="flex">
+                    <input
+                      type="text"
+                      className="form-input rounded-r-none flex-grow"
+                      value={editPath}
+                      onChange={(e) => setEditPath(e.target.value)}
+                      disabled={isSubmitting}
+                    />
+                    <button
+                      type="button"
+                      className="px-3 bg-gray-200 hover:bg-gray-300 border border-gray-300 rounded-r-md flex items-center justify-center"
+                      title="Browse folders"
+                    >
+                      <FolderOpen size={18} className="text-gray-700" />
+                    </button>
+                  </div>
+                </div>
+                <div className="flex space-x-2">
+                  <button
+                    type="submit"
+                    className="btn btn-primary"
+                    disabled={isSubmitting}
+                  >
+                    Save
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-secondary"
+                    onClick={cancelEditing}
+                    disabled={isSubmitting}
+                  >
+                    Cancel
+                  </button>
+                </div>
               </form>
             ) : (
               <>
-                <span className="text-gray-800 dark:text-white">{category.name}</span>
+                <div>
+                  <div className="text-gray-800 dark:text-white font-medium">{category.name}</div>
+                  {category.download_path && (
+                    <div className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                      <span className="flex items-center">
+                        <FolderOpen size={14} className="mr-1" />
+                        {category.download_path}
+                      </span>
+                    </div>
+                  )}
+                </div>
                 <div className="flex space-x-1">
                   <button
                     onClick={() => startEditing(category)}

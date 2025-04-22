@@ -87,13 +87,37 @@ exports.startDownload = async (req, res) => {
     }
     
     const db = getDb();
+    
+    // First get the default download path from settings
     const settings = await db.get('SELECT download_path FROM settings WHERE id = 1');
+    let downloadPath = settings.download_path;
+    
+    // If m3u_link_id is provided, try to get category-specific download path
+    if (m3u_link_id) {
+      try {
+        // Get the category ID for this m3u link
+        const m3uLink = await db.get('SELECT category_id FROM m3u_links WHERE id = ?', [m3u_link_id]);
+        
+        if (m3uLink && m3uLink.category_id) {
+          // Get the category-specific download path
+          const category = await db.get('SELECT download_path FROM categories WHERE id = ?', [m3uLink.category_id]);
+          
+          if (category && category.download_path) {
+            downloadPath = category.download_path;
+            logger.info(`Using category-specific download path: ${downloadPath}`);
+          }
+        }
+      } catch (error) {
+        logger.error('Error getting category download path:', error);
+        // Continue with default download path
+      }
+    }
     
     const downloadId = await startDownload({
       url,
       title,
       m3u_link_id,
-      downloadPath: settings.download_path
+      downloadPath
     });
     
     const download = await db.get('SELECT * FROM downloads WHERE id = ?', [downloadId]);

@@ -5,6 +5,7 @@ class Category {
   constructor(data) {
     this.id = data.id;
     this.name = data.name;
+    this.download_path = data.download_path;
   }
 
   static async findAll() {
@@ -30,11 +31,11 @@ class Category {
     
     if (this.id) {
       // Update existing category
-      await db.run('UPDATE categories SET name = ? WHERE id = ?', [this.name, this.id]);
+      await db.run('UPDATE categories SET name = ?, download_path = ? WHERE id = ?', [this.name, this.download_path, this.id]);
       return this;
     } else {
       // Create new category
-      const result = await db.run('INSERT INTO categories (name) VALUES (?)', [this.name]);
+      const result = await db.run('INSERT INTO categories (name, download_path) VALUES (?, ?)', [this.name, this.download_path]);
       this.id = result.lastID;
       return this;
     }
@@ -53,7 +54,8 @@ class Category {
   toJSON() {
     return {
       id: this.id,
-      name: this.name
+      name: this.name,
+      download_path: this.download_path
     };
   }
 }

@@ -1,6 +1,7 @@
 // backend/src/controllers/categoryController.js
 const { getDb } = require('../utils/database');
 const logger = require('../utils/logger');
+const path = require('path');
 
 exports.getAllCategories = async (req, res) => {
   try {
@@ -15,17 +16,30 @@ exports.getAllCategories = async (req, res) => {
 
 exports.createCategory = async (req, res) => {
   try {
-    const { name } = req.body;
+    const { name, download_path } = req.body;
     if (!name) {
       return res.status(400).json({ error: 'Category name is required' });
     }
     
     const db = getDb();
-    const result = await db.run('INSERT INTO categories (name) VALUES (?)', [name]);
+    
+    // If download_path is not provided, create one based on the default path
+    let categoryDownloadPath = download_path;
+    if (!categoryDownloadPath) {
+      const settings = await db.get('SELECT download_path FROM settings WHERE id = 1');
+      const basePath = settings.download_path;
+      categoryDownloadPath = path.join(basePath, name);
+    }
+    
+    const result = await db.run(
+      'INSERT INTO categories (name, download_path) VALUES (?, ?)', 
+      [name, categoryDownloadPath]
+    );
     
     res.status(201).json({
       id: result.lastID,
-      name
+      name,
+      download_path: categoryDownloadPath
     });
   } catch (error) {
     logger.error('Error creating category:', error);
@@ -41,14 +55,23 @@ exports.createCategory = async (req, res) => {
 exports.updateCategory = async (req, res) => {
   try {
     const { id } = req.params;
-    const { name } = req.body;
+    const { name, download_path } = req.body;
     
     if (!name) {
       return res.status(400).json({ error: 'Category name is required' });
     }
     
     const db = getDb();
-    await db.run('UPDATE categories SET name = ? WHERE id = ?', [name, id]);
+    
+    // If download_path is provided, update it, otherwise keep existing value
+    if (download_path) {
+      await db.run(
+        'UPDATE categories SET name = ?, download_path = ? WHERE id = ?', 
+        [name, download_path, id]
+      );
+    } else {
+      await db.run('UPDATE categories SET name = ? WHERE id = ?', [name, id]);
+    }
     
     const updatedCategory = await db.get('SELECT * FROM categories WHERE id = ?', [id]);
     

@@ -5,7 +5,7 @@ const logger = require('../utils/logger');
 
 exports.parseM3u = async (url) => {
   try {
-    const response = await axios.get(url, { timeout: 10000 });
+    const response = await axios.get(url, { timeout: 60000 });
     const content = response.data;
     
     if (!content || typeof content !== 'string') {

@@ -29,7 +29,8 @@ const initDatabase = async () => {
       
       CREATE TABLE IF NOT EXISTS categories (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT NOT NULL UNIQUE
+        name TEXT NOT NULL UNIQUE,
+        download_path TEXT
       );
       
       CREATE TABLE IF NOT EXISTS m3u_links (
@@ -76,10 +77,42 @@ const initDatabase = async () => {
     
     // Insert default categories if the table is empty
     const categoryCount = await db.get('SELECT COUNT(*) as count FROM categories');
-     if (categoryCount.count === 0) {
-      await db.run("INSERT INTO categories (name) VALUES ('TV Shows')");
-      await db.run("INSERT INTO categories (name) VALUES ('Movies')");
-      logger.info('Inserted default categories.');
+    if (categoryCount.count === 0) {
+      // Get default download path from settings
+      const settings = await db.get('SELECT download_path FROM settings WHERE id = 1');
+      const basePath = settings ? settings.download_path : DEFAULT_SETTINGS.download_path;
+      
+      // Create default paths for TV Shows and Movies
+      const tvShowsPath = path.join(basePath, 'TV Shows');
+      const moviesPath = path.join(basePath, 'Movies');
+      
+      await db.run("INSERT INTO categories (name, download_path) VALUES ('TV Shows', ?)", [tvShowsPath]);
+      await db.run("INSERT INTO categories (name, download_path) VALUES ('Movies', ?)", [moviesPath]);
+      logger.info('Inserted default categories with download paths.');
+    } else {
+      // Check if we need to add download_path to existing categories
+      try {
+        await db.get('SELECT download_path FROM categories LIMIT 1');
+      } catch (error) {
+        if (error.message.includes('no such column')) {
+          // Column doesn't exist, add it
+          logger.info('Adding download_path column to existing categories table');
+          await db.exec('ALTER TABLE categories ADD COLUMN download_path TEXT');
+          
+          // Get default download path from settings
+          const settings = await db.get('SELECT download_path FROM settings WHERE id = 1');
+          const basePath = settings ? settings.download_path : DEFAULT_SETTINGS.download_path;
+          
+          // Update existing categories with default paths
+          const categories = await db.all('SELECT id, name FROM categories');
+          for (const category of categories) {
+            const categoryPath = path.join(basePath, category.name);
+            await db.run('UPDATE categories SET download_path = ? WHERE id = ?', [categoryPath, category.id]);
+          }
+          
+          logger.info('Updated existing categories with default download paths');
+        }
+      }
     }
     
     logger.info('Database initialized successfully');

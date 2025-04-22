@@ -68,9 +68,10 @@ const resetApplication = async (req, res) => {
 
         // 3. Re-insert Default Categories
         logger.info('Re-inserting default categories...');
-        await db.run("INSERT INTO categories (name) VALUES ('TV Shows')");
-        await db.run("INSERT INTO categories (name) VALUES ('Movies')");
-        logger.info('Default categories re-inserted.');
+        // Add download_path for default categories
+        await db.run("INSERT INTO categories (name, download_path) VALUES ('TV Shows', ?)", [DEFAULT_SETTINGS.download_path]);
+        await db.run("INSERT INTO categories (name, download_path) VALUES ('Movies', ?)", [DEFAULT_SETTINGS.download_path]);
+        logger.info('Default categories re-inserted with default download paths.');
 
         // 4. Clear logs directory
         logger.info(`Clearing logs directory: ${LOGS_DIR}`);
